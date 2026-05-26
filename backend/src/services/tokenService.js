@@ -24,26 +24,15 @@ export function applyDailyRollover() {
 }
 
 export function estimatePromptCost(text) {
-  return Math.ceil((text?.length || 0) / 4) + 256;
-}
-
-export function isBalanceCheckDisabled() {
-  return String(process.env.DISABLE_BALANCE_CHECK || 'false').toLowerCase() === 'true';
+  return Math.ceil(text.length / 4) + 512;
 }
 
 export function canAfford(estimated) {
-  if (isBalanceCheckDisabled()) return true;
   const wallet = applyDailyRollover();
   return wallet.balance >= estimated;
 }
 
 export function deductTokens(totalTokens, metadata = {}) {
-  if (isBalanceCheckDisabled()) {
-    db.prepare('INSERT INTO Transactions (type, tokens, metadata, createdAt) VALUES (?, ?, ?, ?)')
-      .run('USAGE_DEBIT_SKIPPED', totalTokens, JSON.stringify(metadata), new Date().toISOString());
-    return;
-  }
-
   const wallet = db.prepare('SELECT * FROM TokenWallet WHERE id = 1').get();
   if (wallet.balance < totalTokens) throw new Error('Insufficient balance');
   const now = new Date().toISOString();
